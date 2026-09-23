@@ -1,0 +1,50 @@
+[
+  {
+    "scope": "task prompt + tool output",
+    "window": 510,
+    "attacks_caught": 10,
+    "attacks_total": 629,
+    "false_blocks": 0,
+    "benign_total": 97
+  },
+  {
+    "scope": "task prompt + tool output",
+    "window": 128,
+    "attacks_caught": 6,
+    "attacks_total": 629,
+    "false_blocks": 0,
+    "benign_total": 97
+  },
+  {
+    "scope": "task prompt + tool output",
+    "window": 64,
+    "attacks_caught": 16,
+    "attacks_total": 629,
+    "false_blocks": 0,
+    "benign_total": 97
+  },
+  {
+    "scope": "tool output only",
+    "window": 510,
+    "attacks_caught": 0,
+    "attacks_total": 629,
+    "false_blocks": 0,
+    "benign_total": 97
+  },
+  {
+    "scope": "tool output only",
+    "window": 128,
+    "attacks_caught": 0,
+    "attacks_total": 629,
+    "false_blocks": 0,
+    "benign_total": 97
+  },
+  {
+    "scope": "tool output only",
+    "window": 64,
+    "attacks_caught": 18,
+    "attacks_total": 629,
+    "false_blocks": 0,
+    "benign_total": 97
+  }
+]

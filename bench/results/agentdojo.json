@@ -1,0 +1,22 @@
+[
+  {
+    "detector": "regex-baseline",
+    "attacks_total": 629,
+    "attacks_caught": 0,
+    "detection_rate": 0.0,
+    "benign_total": 97,
+    "false_blocks": 0,
+    "false_positive_rate": 0.0,
+    "p50_ms": 0.065
+  },
+  {
+    "detector": "prompt-guard-2",
+    "attacks_total": 629,
+    "attacks_caught": 6,
+    "detection_rate": 0.009538950715421303,
+    "benign_total": 97,
+    "false_blocks": 0,
+    "false_positive_rate": 0.0,
+    "p50_ms": 142.948
+  }
+]
