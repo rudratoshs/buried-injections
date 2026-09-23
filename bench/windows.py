@@ -1,9 +1,9 @@
 """
-windows.py -- the context-dilution experiment behind the README's window table.
+windows.py -- the input scope x window size experiment behind the README table.
 
 Scores every AgentDojo case with Prompt Guard 2 under two input scopes
 (task prompt + tool output, or tool output only) and three window sizes,
-to show the low catch rate comes from the model, not from how cases are built.
+to show the low catch rate does not depend on how cases are built.
 
 Usage:
     python bench/windows.py        # ~15 min on CPU
