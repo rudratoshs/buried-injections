@@ -11,7 +11,7 @@
 ![Benign](https://img.shields.io/badge/benign-97-success)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-<img src="assets/social-preview.png" alt="Regex catches 0/629, Prompt Guard 2 catches 6/629 AgentDojo attacks" width="720">
+<img src="assets/social-preview.png" alt="10 prompt-injection detectors vs 629 real agent attacks: none catches most attacks without blocking safe traffic" width="720">
 
 </div>
 
