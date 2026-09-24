@@ -257,12 +257,20 @@ so that anyone can reproduce every number for free.
 - 🧪 **629 cases, 27 distinct attacks.** Each of AgentDojo's 27 injection goals is
   paired with many user tasks and tool outputs, all using one attack template
   (`important_instructions`). Treat results as a *pattern*, not a universal constant.
-- 🎚️ **One threshold.** Every classifier runs at 0.5. Some would trade catches for false
-  positives differently at other thresholds.
+- 🎚️ **Thresholds.** The leaderboard runs every classifier at 0.5 (LLM Guard at its shipped
+  default); [the budget section](#%EF%B8%8F-at-a-fixed-false-alarm-budget) shows how much a
+  calibrated threshold changes the picture.
 - 📚 **One benchmark.** A fuller picture would add InjecAgent, AgentDyn, other AgentDojo
   attack templates, and a live-agent evaluation.
 - 🚦 The 16-case sample is a **smoke test**, not a result. Only the AgentDojo numbers
   are meaningful.
+
+---
+
+## ⭐ Found this useful?
+
+If it saved you from trusting a default threshold, a star helps other people building
+agents find it. Detector requests and PRs are welcome too.
 
 ---
 
