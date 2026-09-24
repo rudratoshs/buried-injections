@@ -1,0 +1,6 @@
+agentdojo>=0.1.35
+transformers>=4.51,<5
+torch>=2.2
+llm-guard>=0.3.16
+sentencepiece>=0.2
+protobuf>=4

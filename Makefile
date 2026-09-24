@@ -1,10 +1,10 @@
 .PHONY: bench bench-agentdojo bench-windows bench-payloads setup
 
-# Everything runs in a local venv (Homebrew's Python is externally managed).
+# Everything runs in a local Python 3.12 venv (llm-guard does not build on 3.14).
 PY := .venv/bin/python
 
 setup:
-	python3 -m venv .venv && .venv/bin/pip install agentdojo transformers torch
+	python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 bench:
 	$(PY) bench/run.py --dataset sample
@@ -12,7 +12,7 @@ bench:
 bench-agentdojo:
 	$(PY) bench/run.py --dataset agentdojo
 
-# Attack text scored on its own, no surrounding context (~10 s on CPU).
+# Attack text scored on its own, no surrounding context (~1 min on CPU).
 bench-payloads:
 	$(PY) bench/payloads.py
 

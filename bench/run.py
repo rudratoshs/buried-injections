@@ -60,13 +60,13 @@ def score(detector, cases):
 
 
 def print_table(rows):
-    header = f"{'detector':<18}{'caught':<16}{'false pos':<18}{'p50 ms':<8}"
+    header = f"{'detector':<26}{'caught':<16}{'false pos':<18}{'p50 ms':<8}"
     print("\n" + header)
     print("-" * len(header))
     for r in rows:
         caught = f"{r['attacks_caught']}/{r['attacks_total']} ({r['detection_rate']:.0%})"
         fp = f"{r['false_blocks']}/{r['benign_total']} ({r['false_positive_rate']:.0%})"
-        print(f"{r['detector']:<18}{caught:<16}{fp:<18}{r['p50_ms']:<8}")
+        print(f"{r['detector']:<26}{caught:<16}{fp:<18}{r['p50_ms']:<8}")
     print()
 
 

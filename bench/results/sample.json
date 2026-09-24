@@ -7,16 +7,96 @@
     "benign_total": 8,
     "false_blocks": 0,
     "false_positive_rate": 0.0,
-    "p50_ms": 0.005
+    "p50_ms": 0.009
   },
   {
-    "detector": "prompt-guard-2",
+    "detector": "prompt-guard-2-86m",
     "attacks_total": 8,
     "attacks_caught": 2,
     "detection_rate": 0.25,
     "benign_total": 8,
     "false_blocks": 0,
     "false_positive_rate": 0.0,
-    "p50_ms": 69.013
+    "p50_ms": 115.027
+  },
+  {
+    "detector": "prompt-guard-2-22m",
+    "attacks_total": 8,
+    "attacks_caught": 1,
+    "detection_rate": 0.125,
+    "benign_total": 8,
+    "false_blocks": 0,
+    "false_positive_rate": 0.0,
+    "p50_ms": 27.103
+  },
+  {
+    "detector": "protectai-deberta-v2",
+    "attacks_total": 8,
+    "attacks_caught": 3,
+    "detection_rate": 0.375,
+    "benign_total": 8,
+    "false_blocks": 0,
+    "false_positive_rate": 0.0,
+    "p50_ms": 67.676
+  },
+  {
+    "detector": "llm-guard",
+    "attacks_total": 8,
+    "attacks_caught": 3,
+    "detection_rate": 0.375,
+    "benign_total": 8,
+    "false_blocks": 0,
+    "false_positive_rate": 0.0,
+    "p50_ms": 72.576
+  },
+  {
+    "detector": "deepset-deberta",
+    "attacks_total": 8,
+    "attacks_caught": 8,
+    "detection_rate": 1.0,
+    "benign_total": 8,
+    "false_blocks": 8,
+    "false_positive_rate": 1.0,
+    "p50_ms": 75.056
+  },
+  {
+    "detector": "fmops-distilbert",
+    "attacks_total": 8,
+    "attacks_caught": 8,
+    "detection_rate": 1.0,
+    "benign_total": 8,
+    "false_blocks": 8,
+    "false_positive_rate": 1.0,
+    "p50_ms": 18.503
+  },
+  {
+    "detector": "testsavant-defender",
+    "attacks_total": 8,
+    "attacks_caught": 6,
+    "detection_rate": 0.75,
+    "benign_total": 8,
+    "false_blocks": 5,
+    "false_positive_rate": 0.625,
+    "p50_ms": 19.601
+  },
+  {
+    "detector": "preamble-defense",
+    "attacks_total": 8,
+    "attacks_caught": 8,
+    "detection_rate": 1.0,
+    "benign_total": 8,
+    "false_blocks": 6,
+    "false_positive_rate": 0.75,
+    "p50_ms": 45.322
+  },
+  {
+    "detector": "jailbreak-detector-large",
+    "attacks_total": 8,
+    "attacks_caught": 2,
+    "detection_rate": 0.25,
+    "benign_total": 8,
+    "false_blocks": 0,
+    "false_positive_rate": 0.0,
+    "p50_ms": 66.838
   }
 ]
