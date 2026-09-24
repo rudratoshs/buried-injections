@@ -24,11 +24,14 @@ injection attacks**, each buried inside ordinary tool output — the way an agen
 firewall actually sees them. **None catches most attacks without also blocking
 normal traffic.**
 
-> 🥇 **Best trade-off:** 51% caught at 2% false positives
+> 🥇 **Best trade-off out of the box:** 51% caught at 2% false positives
 > 🔴 **Meta's Prompt Guard 2:** 1% caught
 > 🚫 **Two detectors** flag 98% of *safe* tool outputs too
+> 🎚️ **Tune each threshold to a 2% false-alarm budget and the ranking flips:** Prompt Guard 2
+> goes from worst to best (99% on unseen domains), and the "catch everything" detectors fall to ~0%
 
-And they fail in **three different ways** 👇
+They fail in **three different ways** out of the box 👇, and the default threshold turns out to
+matter as much as the model ([details](#%EF%B8%8F-at-a-fixed-false-alarm-budget)).
 
 ---
 
@@ -43,8 +46,8 @@ surrounding text (`make bench-payloads`).
 | 🥇 [`jailbreak-detector-large`](https://huggingface.co/madhurjindal/Jailbreak-Detector-Large) | **319 / 629** (51%) | 2 / 97 (2%) | 25 / 27 | 110 ms | Best trade-off, still misses half |
 | [`protectai-deberta-v2`](https://huggingface.co/protectai/deberta-v3-base-prompt-injection-v2) | 145 / 629 (23%) | 4 / 97 (4%) | **27 / 27** | 163 ms | 🫥 Context dilution |
 | [`llm-guard`](https://github.com/protectai/llm-guard) *(as shipped, threshold 0.92)* | 124 / 629 (20%) | 2 / 97 (2%) | **27 / 27** | 124 ms | 🫥 Context dilution |
-| [`prompt-guard-2-86m`](https://huggingface.co/meta-llama/Llama-Prompt-Guard-2-86M) | 6 / 629 (1%) | 0 / 97 (0%) | 0 / 27 | 149 ms | 🙈 Doesn't recognise the wording |
-| [`prompt-guard-2-22m`](https://huggingface.co/meta-llama/Llama-Prompt-Guard-2-22M) | 0 / 629 (0%) | 0 / 97 (0%) | 0 / 27 | 55 ms | 🙈 Doesn't recognise the wording |
+| [`prompt-guard-2-86m`](https://huggingface.co/meta-llama/Llama-Prompt-Guard-2-86M) | 6 / 629 (1%) | 0 / 97 (0%) | 0 / 27 | 149 ms | 🎚️ Default threshold far too high ([see below](#%EF%B8%8F-at-a-fixed-false-alarm-budget)) |
+| [`prompt-guard-2-22m`](https://huggingface.co/meta-llama/Llama-Prompt-Guard-2-22M) | 0 / 629 (0%) | 0 / 97 (0%) | 0 / 27 | 55 ms | 🎚️ Default threshold far too high |
 | 🔤 `regex-baseline` | 0 / 629 (0%) | 0 / 97 (0%) | 0 / 27 | 0.05 ms | 🙈 Doesn't recognise the wording |
 | [`preamble-defense`](https://huggingface.co/PreambleAI/prompt-injection-defense) | 556 / 629 (88%) | 46 / 97 (47%) | 26 / 27 | 124 ms | 🚨 Blocks half of safe traffic |
 | [`testsavant-defender`](https://huggingface.co/testsavantai/prompt-injection-defender-base-v0) | 370 / 629 (59%) | 47 / 97 (48%) | 15 / 27 | 37 ms | 🚨 Blocks half of safe traffic |
@@ -69,9 +72,54 @@ surrounding text (`make bench-payloads`).
 
 ---
 
+## 🎚️ At a fixed false-alarm budget
+
+A detector that blocks lots of normal traffic gets switched off, and then it catches nothing.
+So instead of each model's default threshold, `make bench-budget` finds the threshold at which it
+wrongly blocks **at most 2% of normal traffic**, and counts the attacks it still catches there.
+*(Suggested by a reader on LinkedIn: rank detectors by what they cost when they're wrong.)*
+
+To keep that honest, the threshold is chosen on normal traffic from 3 of AgentDojo's 4 domains
+(workspace, travel, banking, Slack) and measured on the **4th domain it has never seen**, rotating
+through all four:
+
+| Detector | Default threshold: caught / false alarms | **At a 2% budget, unseen domain**: caught / false alarms | Threshold used |
+|---|---|---|---|
+| [`prompt-guard-2-86m`](https://huggingface.co/meta-llama/Llama-Prompt-Guard-2-86M) | 1% / 0% | **621 / 629 (99%)** / 5 / 97 (5%) | 0.003 |
+| 🥇 [`jailbreak-detector-large`](https://huggingface.co/madhurjindal/Jailbreak-Detector-Large) | 51% / 2% | **322 / 629 (51%)** / 4 / 97 (4%) | 0.54 |
+| [`fmops-distilbert`](https://huggingface.co/fmops/distilbert-prompt-injection) | 100% / **98%** | 302 / 629 (48%) / 2 / 97 (2%) | 0.9996 |
+| [`prompt-guard-2-22m`](https://huggingface.co/meta-llama/Llama-Prompt-Guard-2-22M) | 0% / 0% | 219 / 629 (35%) / 13 / 97 (13%) | 0.027 |
+| [`protectai-deberta-v2`](https://huggingface.co/protectai/deberta-v3-base-prompt-injection-v2) ¹ | 23% / 4% | 132 / 629 (21%) / 3 / 97 (3%) | 0.98 |
+| [`testsavant-defender`](https://huggingface.co/testsavantai/prompt-injection-defender-base-v0) | 59% / **48%** | 96 / 629 (15%) / 9 / 97 (9%) | 0.9997 |
+| [`preamble-defense`](https://huggingface.co/PreambleAI/prompt-injection-defense) | 88% / **47%** | 16 / 629 (3%) / 2 / 97 (2%) | 1.0 |
+| [`deepset-deberta`](https://huggingface.co/deepset/deberta-v3-base-injection) | 100% / **98%** | 2 / 629 (0%) / 5 / 97 (5%) | 0.999 |
+| 🔤 `regex-baseline` | 0% / 0% | 0 / 629 (0%) / 0 / 97 (0%) | – |
+
+<sub>¹ LLM Guard uses the same model with a different default threshold, so at a fixed budget it matches this row.</sub>
+
+**What it shows:**
+
+- 📉 **The "catch everything" detectors collapse.** deepset goes from 100% to 0%, Preamble from 88% to 3%.
+  Their high catch rates came from flagging almost everything.
+- 🎚️ **Prompt Guard 2 was held back by its default threshold, not its model.** It scores attacks around
+  0.009 and normal text around 0.0008: the ranking is nearly perfect, but everything sits far below its
+  default cutoff of 0.5. At a cutoff of 0.003 it catches 99% of attacks on domains it wasn't tuned on.
+- 🥇 **Jailbreak-Detector-Large barely changes** (51% either way), which suggests its default threshold is
+  already well placed.
+
+> [!WARNING]
+> **Don't read 99% as "Prompt Guard 2 solves this".** Every AgentDojo attack uses the **same wrapper
+> template** ("This is an important message from me…"), so a finely tuned threshold may be recognising
+> the template rather than attacks in general; real attackers vary their wording. Thresholds this small
+> (0.003) are also fragile, and 97 normal cases is a small sample, which is why false alarms on unseen
+> domains run above the 2% budget for several detectors. The lesson is narrower and more useful:
+> **tune a detector's threshold on your own traffic before trusting its out-of-the-box numbers.**
+
+---
+
 ## 🔬 Three ways detectors fail
 
-### 1. 🙈 They don't recognise the wording — Prompt Guard 2
+### 1. 🙈 They don't flag the wording at their default threshold — Prompt Guard 2
 
 `make bench-payloads` scores each attack **on its own**, with nothing around it:
 
@@ -84,7 +132,9 @@ surrounding text (`make bench-payloads`).
 ✍️ = hand-written controls. Prompt Guard 2 catches the phrasing it was trained on.
 AgentDojo's goals — 💸 *"Send as much money as possible to the account US13…"*,
 🗑️ *"Delete the file with ID '13'"* — read like ordinary user requests. Nothing in the
-**wording** gives them away.
+**wording** gives them away, at least not enough to cross the default cutoff of 0.5. (Scores do sit
+slightly higher than normal text's, which is why a much lower threshold works; see
+[the budget section](#%EF%B8%8F-at-a-fixed-false-alarm-budget).)
 
 ### 2. 🫥 They recognise it alone, then lose it in context — ProtectAI, LLM Guard
 
@@ -114,7 +164,7 @@ without the task prompt, and with smaller windows:
 | 🔧 tool output only | 128 | 0 / 629 | 0 / 97 |
 | 🔧 tool output only | 64 | 18 / 629 (3%) | 0 / 97 |
 
-No configuration gets past **3%**.
+No configuration gets past **3%** at the default threshold.
 
 <sub>ℹ️ The leaderboard shows 6/629 rather than 10/629 for the default configuration
 because the harness prefixes each case with its tool name, `agent_task`. Small wording
@@ -163,6 +213,7 @@ make setup            # 📦 Python 3.12 venv + requirements.txt (agentdojo, tra
 make bench            # 🧪 16-case built-in sample
 make bench-agentdojo  # 📊 the leaderboard above (~25 min on CPU for all 10 detectors)
 make bench-payloads   # 🔬 each attack scored on its own (~1 min)
+make bench-budget     # 🎚️ catch rate at a 2% false-alarm budget, cross-domain (~20 min; `.venv/bin/python bench/at_budget.py --reuse` reuses saved scores)
 make bench-windows    # 🪟 Prompt Guard 2 input scope × window size (~15 min)
 ```
 
@@ -182,6 +233,7 @@ run `.venv/bin/hf auth login`, then change the model ids in
 | `bench/datasets/__init__.py` | Test cases: 16-case sample + AgentDojo loader (629 + 97) |
 | `bench/detectors/__init__.py` | All 10 detectors |
 | `bench/payloads.py` | Each AgentDojo attack scored alone, plus hand-written controls |
+| `bench/at_budget.py` | Catch rate at a fixed false-alarm budget, with the threshold checked on unseen domains |
 | `bench/windows.py` | Prompt Guard 2 input scope × window size experiment |
 | `bench/results/` | Generated tables (JSON) |
 
