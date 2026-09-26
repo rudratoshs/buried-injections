@@ -8,6 +8,8 @@ safe call, and how much time it added.
 Usage:
     python bench/run.py                  # uses the built-in sample set
     python bench/run.py --dataset agentdojo
+    python bench/run.py --detector regex-baseline   # run one detector only
+    python bench/run.py --list-detectors            # show detector names
 """
 
 import argparse
@@ -73,17 +75,35 @@ def print_table(rows):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", default="sample", choices=list(DATASETS))
+    parser.add_argument("--detector", default=None,
+                        help="run only this detector (see --list-detectors)")
+    parser.add_argument("--list-detectors", action="store_true",
+                        help="print detector names and exit")
     args = parser.parse_args()
 
+    if args.list_detectors:
+        for d in DETECTORS:
+            print(d.name)
+        return
+
+    detectors = DETECTORS
+    if args.detector:
+        detectors = [d for d in DETECTORS if d.name == args.detector]
+        if not detectors:
+            available = ", ".join(d.name for d in DETECTORS)
+            parser.error("unknown detector %r (available: %s)"
+                         % (args.detector, available))
+
     cases = DATASETS[args.dataset]()
-    rows = [score(d, cases) for d in DETECTORS]
+    rows = [score(d, cases) for d in detectors]
 
     print(f"\nDataset: {args.dataset}  ({len(cases)} cases)")
     print_table(rows)
 
     out_dir = os.path.join(os.path.dirname(__file__), "results")
     os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, f"{args.dataset}.json")
+    stem = args.dataset if not args.detector else f"{args.dataset}.{args.detector}"
+    out_path = os.path.join(out_dir, f"{stem}.json")
     with open(out_path, "w") as f:
         json.dump(rows, f, indent=2)
     print(f"Saved: {out_path}\n")
