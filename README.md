@@ -224,6 +224,20 @@ run `.venv/bin/hf auth login`, then change the model ids in
 `bench/detectors/__init__.py`.
 
 ---
+### Expected runtime and hardware
+
+| Target | Time (CPU) | Disk | GPU |
+|--------|------------|------|-----|
+| `make setup` | ~5 min first time | ~5 GB weights | Not needed |
+| `make bench` | < 1 min | — | Not needed |
+| `make bench-agentdojo` | ~25 min | — | Optional, speeds up inference |
+| `make bench-payloads` | ~1 min | — | Not needed |
+| `make bench-budget` | ~20 min | — | Optional |
+| `make bench-windows` | ~15 min | — | Optional |
+
+Times are rough estimates on a modern CPU (e.g., Apple silicon or equivalent). No target requires a GPU; GPU acceleration only shortens the detector benchmarks.
+
+---
 
 ## 🗂️ Files
 
