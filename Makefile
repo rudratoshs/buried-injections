@@ -1,4 +1,4 @@
-.PHONY: bench bench-agentdojo bench-windows bench-payloads bench-budget bench-action test setup
+.PHONY: bench bench-agentdojo bench-windows bench-payloads bench-budget bench-action bench-register test setup
 
 # Everything runs in a local Python 3.12 venv (llm-guard does not build on 3.14).
 PY := .venv/bin/python
@@ -28,6 +28,11 @@ bench-windows:
 # Reuses the saved detector scores from bench-budget, so no model download (~5 s).
 bench-action:
 	$(PY) bench/action_level.py
+
+# Same injection as a command and as a polite request, scored alone (~1 min on CPU).
+# The 2% budget column reuses the thresholds saved by bench-budget.
+bench-register:
+	$(PY) bench/register.py
 
 test:
 	$(PY) -m pytest -q tests
