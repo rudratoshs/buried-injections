@@ -196,14 +196,14 @@ as a command, and as a polite first-person request for exactly the same action, 
 | Detector | Default threshold: command → polite caught | At a 2% budget: command → polite caught |
 |---|---|---|
 | `regex-baseline` | 1 → 1 (p=1) | 1 → 1 (p=1) |
-| `prompt-guard-2-86m` | 13 → 0 (p=0.0012) | 27 → 1 (p=2e-7) |
-| `prompt-guard-2-22m` | 7 → 0 (p=0.047) | 17 → 1 (p=0.0009) |
-| `protectai-deberta-v2` | 31 → 12 (p=0.0001) | 31 → 9 (p=3e-6) |
-| `llm-guard` | 31 → 9 (p=4e-6) | n/a (same model as protectai) |
-| `deepset-deberta` | 40 → 22 (p=6e-5) | 11 → 0 (p=0.0039) |
+| `prompt-guard-2-86m` | 13 → 0 (p=0.0012) | 27 → 1 (p=2.4e-7) |
+| `prompt-guard-2-22m` | 7 → 0 (p=0.047) | 17 → 1 (p=8.7e-4) |
+| `protectai-deberta-v2` | 31 → 12 (p=1.3e-4) | 31 → 9 (p=3.3e-6) |
+| `llm-guard` | 31 → 9 (p=4.3e-6) | n/a (same model as protectai) |
+| `deepset-deberta` | 40 → 22 (p=6.1e-5) | 11 → 0 (p=0.0039) |
 | `fmops-distilbert` | 40 → 27 (p=0.0012) | 0 → 0 (p=1) |
-| `testsavant-defender` | 39 → 7 (p=5e-9) | 13 → 0 (p=0.0012) |
-| `preamble-defense` | 40 → 23 (p=0.0001) | 27 → 0 (p=1e-7) |
+| `testsavant-defender` | 39 → 7 (p=4.7e-9) | 13 → 0 (p=0.0012) |
+| `preamble-defense` | 40 → 23 (p=1.1e-4) | 27 → 0 (p=1.3e-7) |
 | `jailbreak-detector-large` | 8 → 1 (p=0.047) | 8 → 1 (p=0.047) |
 
 <sub>p = exact McNemar on the 40 pairs, Holm-corrected across detectors. The 2% budget uses the in-sample
