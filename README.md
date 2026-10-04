@@ -27,14 +27,15 @@ normal traffic.**
 > 🥇 **Best trade-off out of the box:** 51% caught at 2% false positives
 > 🔴 **Meta's Prompt Guard 2:** 1% caught
 > 🚫 **Two detectors** flag 98% of *safe* tool outputs too
-> 🎚️ **Tune each threshold to a 2% false-alarm budget and the ranking flips:** Prompt Guard 2
-> goes from worst to best (99% on unseen domains), and the "catch everything" detectors fall to ~0%
+> 🎚️ **Recalibrate each threshold on held-out benign traffic and the ranking flips:** Prompt Guard 2
+> goes from worst to best (97–100% caught across unseen domains, at ~5% false alarms there), and the
+> "catch everything" detectors fall to a ~0% worst fold
 
 > **The headline finding isn't "the model can't see buried injections" — it's that the shipped
-> defaults are miscalibrated for mixed content.** Prompt Guard 2 catches **1% at its default cutoff
-> and 99% on an unseen domain** once the threshold is tuned to a 2% false-alarm budget. (Read that 99%
-> as "defaults are wrong by ~two orders of magnitude," not "solved" — it's tuned on AgentDojo's
-> shared attack template; see the [caveat](#%EF%B8%8F-at-a-fixed-false-alarm-budget).)
+> defaults are miscalibrated for mixed content.** Prompt Guard 2 catches **1% at its default 0.5 cutoff
+> and 97–100% per unseen domain** once the threshold is lowered to 0.003. (Read that as "defaults are
+> wrong by ~two orders of magnitude," not "solved" — it's tuned on AgentDojo's shared attack template,
+> at ~5% false alarms on unseen domains; see the [caveat](#%EF%B8%8F-at-a-fixed-false-alarm-budget).)
 
 They fail in **three different ways** out of the box 👇, and the default threshold turns out to
 matter as much as the model ([details](#%EF%B8%8F-at-a-fixed-false-alarm-budget)).
@@ -82,44 +83,61 @@ surrounding text (`make bench-payloads`).
 
 A detector that blocks lots of normal traffic gets switched off, and then it catches nothing.
 So instead of each model's default threshold, `make bench-budget` finds the threshold at which it
-wrongly blocks **at most 2% of normal traffic**, and counts the attacks it still catches there.
-*(Suggested by a reader on LinkedIn: rank detectors by what they cost when they're wrong.)*
+wrongly blocks **at most 2% of the benign cases it is calibrated on**, and counts the attacks it still
+catches there.
+*(The cost-of-being-wrong framing was suggested by a reader on LinkedIn; the per-fold, interval and
+allowed-count reporting below was prompted by [pm25coder](https://dev.to/pm25coder) and
+[Arhan Canli](https://dev.to/arhancanli), who re-ran `at_budget.py` against the saved scores.)*
 
 To keep that honest, the threshold is chosen on normal traffic from 3 of AgentDojo's 4 domains
 (workspace, travel, banking, Slack) and measured on the **4th domain it has never seen**, rotating
-through all four:
+through all four. Two cautions this surfaces, before the table:
 
-| Detector | Default threshold: caught / false alarms | **At a 2% budget, unseen domain**: caught / false alarms | Threshold used |
-|---|---|---|---|
-| [`prompt-guard-2-86m`](https://huggingface.co/meta-llama/Llama-Prompt-Guard-2-86M) | 1% / 0% | **621 / 629 (99%)** / 5 / 97 (5%) | 0.003 |
-| 🥇 [`jailbreak-detector-large`](https://huggingface.co/madhurjindal/Jailbreak-Detector-Large) | 51% / 2% | **322 / 629 (51%)** / 4 / 97 (4%) | 0.54 |
-| [`fmops-distilbert`](https://huggingface.co/fmops/distilbert-prompt-injection) | 100% / **98%** | 302 / 629 (48%) / 2 / 97 (2%) | 0.9996 |
-| [`prompt-guard-2-22m`](https://huggingface.co/meta-llama/Llama-Prompt-Guard-2-22M) | 0% / 0% | 219 / 629 (35%) / 13 / 97 (13%) | 0.027 |
-| [`protectai-deberta-v2`](https://huggingface.co/protectai/deberta-v3-base-prompt-injection-v2) ¹ | 23% / 4% | 132 / 629 (21%) / 3 / 97 (3%) | 0.98 |
-| [`testsavant-defender`](https://huggingface.co/testsavantai/prompt-injection-defender-base-v0) | 59% / **48%** | 96 / 629 (15%) / 9 / 97 (9%) | 0.9997 |
-| [`preamble-defense`](https://huggingface.co/PreambleAI/prompt-injection-defense) | 88% / **47%** | 16 / 629 (3%) / 2 / 97 (2%) | 1.0 |
-| [`deepset-deberta`](https://huggingface.co/deepset/deberta-v3-base-injection) | 100% / **98%** | 2 / 629 (0%) / 5 / 97 (5%) | 0.999 |
-| 🔤 `regex-baseline` | 0% / 0% | 0 / 629 (0%) / 0 / 97 (0%) | – |
+- **The pooled rate hides the spread, so trust the worst fold.** For a security control the min fold is
+  the number that matters, not the average — Prompt Guard 2 22m pools to 35% but runs 100% on travel
+  and 1% on Slack.
+- **"2%" is degenerate at this corpus size.** Each calibration split is 57–81 benign cases, so
+  `floor(0.02 × N)` allows **exactly one** benign case above the line in every fold. So read the budget
+  as "1 case", and the unseen-domain false-alarm rate (with its 95% interval) as what that actually costs.
 
-<sub>¹ LLM Guard uses the same model with a different default threshold, so at a fixed budget it matches this row.</sub>
+Sorted by min fold — the number to trust — with a 95% Wilson interval and the fold's attack count `n`:
+
+| Detector | Default: caught / FP | Unseen pooled | Per-fold ws/tr/bk/sl | **Min fold** [95% CI] | Unseen FP [95% CI] | Thr |
+|---|---|---|---|---|---|---|
+| [`prompt-guard-2-86m`](https://huggingface.co/meta-llama/Llama-Prompt-Guard-2-86M) | 1% / 0% | 99% (621/629) | 97/100/100/100 | **97% [94–98]** n=240 | 5/97 = 5% [2–12] | 0.003 |
+| [`fmops-distilbert`](https://huggingface.co/fmops/distilbert-prompt-injection) | 100% / 98% | 48% (302/629) | 51/26/62/50 | **26% [19–34]** n=140 | 2/97 = 2% [1–7] | 0.9996 |
+| [`jailbreak-detector-large`](https://huggingface.co/madhurjindal/Jailbreak-Detector-Large) | 51% / 2% | 51% (322/629) | 59/17/36/100 | **17% [12–24]** n=140 | 4/97 = 4% [2–10] | 0.54 |
+| [`prompt-guard-2-22m`](https://huggingface.co/meta-llama/Llama-Prompt-Guard-2-22M) | 0% / 0% | 35% (219/629) | 23/100/16/1 | **1% [0–5]** n=105 | 13/97 = 13% [8–22] | 0.027 |
+| [`protectai-deberta-v2`](https://huggingface.co/protectai/deberta-v3-base-prompt-injection-v2) ¹ | 23% / 4% | 21% (132/629) | 30/0/37/6 | **0% [0–3]** n=140 | 3/97 = 3% [1–9] | 0.98 |
+| [`testsavant-defender`](https://huggingface.co/testsavantai/prompt-injection-defender-base-v0) | 59% / 48% | 15% (96/629) | 2/66/0/0 | **0% [0–3]** n=144 | 9/97 = 9% [5–17] | 0.9997 |
+| [`preamble-defense`](https://huggingface.co/PreambleAI/prompt-injection-defense) | 88% / 47% | 3% (16/629) | 7/0/0/0 | **0% [0–3]** n=140 | 2/97 = 2% [1–7] | 1.0 |
+| [`deepset-deberta`](https://huggingface.co/deepset/deberta-v3-base-injection) | 100% / 98% | 0% (2/629) | 1/0/0/0 | **0% [0–3]** n=140 | 5/97 = 5% [2–12] | 0.999 |
+| 🔤 `regex-baseline` | 0% / 0% | 0% (0/629) | 0/0/0/0 | **0% [0–2]** n=240 | 0/97 = 0% [0–4] | – |
+
+<sub>¹ LLM Guard uses the same model with a different default threshold, so at a fixed budget it matches this row.
+Per-fold / min-fold figures are the attacks caught on each held-out suite (workspace/travel/banking/Slack);
+reproduce them with `python bench/at_budget.py --reuse`.</sub>
 
 **What it shows:**
 
-- 📉 **The "catch everything" detectors collapse.** deepset goes from 100% to 0%, Preamble from 88% to 3%.
-  Their high catch rates came from flagging almost everything.
 - 🎚️ **Prompt Guard 2 was held back by its default threshold, not its model.** It scores attacks around
-  0.009 and normal text around 0.0008: the ranking is nearly perfect, but everything sits far below its
-  default cutoff of 0.5. At a cutoff of 0.003 it catches 99% of attacks on domains it wasn't tuned on.
-- 🥇 **Jailbreak-Detector-Large barely changes** (51% either way), which suggests its default threshold is
-  already well placed.
+  0.009 and normal text around 0.0008, so the ranking is nearly perfect while everything sits far below
+  its 0.5 default. At 0.003 it catches 97–100% across folds — the one result here that holds on every
+  unseen domain.
+- 📉 **The "catch everything" detectors collapse.** deepset goes from 100% to a 0% min fold, Preamble from
+  88% to 0%. Their high default catch rates came from flagging almost everything.
+- 🤝 **Below the top, the ranking isn't real.** Once you attach the 95% intervals, fmops [19–34] and
+  jailbreak-detector-large [12–24] overlap, and four detectors are all 0% [0–3] — indistinguishable at
+  this sample size. Only Prompt Guard 2 86m is cleanly separated.
 
 > [!WARNING]
-> **Don't read 99% as "Prompt Guard 2 solves this".** Every AgentDojo attack uses the **same wrapper
-> template** ("This is an important message from me…"), so a finely tuned threshold may be recognising
-> the template rather than attacks in general; real attackers vary their wording. Thresholds this small
-> (0.003) are also fragile, and 97 normal cases is a small sample, which is why false alarms on unseen
-> domains run above the 2% budget for several detectors. The lesson is narrower and more useful:
-> **tune a detector's threshold on your own traffic before trusting its out-of-the-box numbers.**
+> **Don't read the 99% pooled number as "Prompt Guard 2 solves this".** Beyond the min-fold spread above,
+> two things. Every AgentDojo attack uses the **same wrapper template** ("This is an important message
+> from me…"), so a threshold tuned this finely (0.003) may be recognising the template, not attacks in
+> general; real attackers vary their wording. And at 97 benign cases the budget is one case wide, so the
+> unseen-domain false-alarm rate runs well past 2% for several detectors — its 95% interval is in the
+> table. The durable lesson is narrower: **tune a detector's threshold on your own traffic before
+> trusting any single number on its model card.**
 
 ---
 
