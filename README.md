@@ -149,6 +149,16 @@ on their own. Put the same attacks after a normal bill, email or review, and it
 catches only **23%**. The surrounding benign tool output drowns the signal — the
 exact situation a gateway scanning tool results is in.
 
+> [!NOTE]
+> **This drop is dilution, not truncation.** These models read 512 tokens at a time, so a
+> fair question is whether the 23% is just the injection falling off the end of a long input.
+> It isn't: every detector scores the input in **overlapping 510-token windows (stride 384)
+> with max-pooling** (`add_special_tokens=False`, see `bench/detectors/__init__.py`), so an
+> injection sitting past the first window is still seen and the score is the max over all
+> windows. Nothing is silently cut. The signal is genuinely drowned by the surrounding benign
+> text. (Thanks to [u/pWiklacz](https://www.reddit.com/r/LLMDevs/comments/1wsbuhg/comment/pdg1c7o/)
+> for raising the truncation question.)
+
 ### 3. 🚨 They flag everything — deepset, fmops, and half the traffic for Preamble, TestSavant
 
 deepset and fmops catch 100% of attacks — and **98% of safe tool outputs**. A detector
