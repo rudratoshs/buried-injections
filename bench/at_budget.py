@@ -150,6 +150,20 @@ def main():
     report(rows, args.budget, out)
 
 
+def per_suite_benign(b, sizes, names=None):
+    """Each suite's benign p50/p99 -- the drift signal. A threshold set on other
+    suites is miscalibrated for a suite whose benign tail (p99) sits far from it,
+    which is why a transferred cutoff can blow the budget on an unseen domain."""
+    names = names or [f"suite{i}" for i in range(len(sizes))]
+    out, i = [], 0
+    for (nb, _), name in zip(sizes, names):
+        part = b[i:i + nb]
+        i += nb
+        out.append({"suite": name, "p50": percentile(part, 0.50),
+                    "p99": percentile(part, 0.99), "n": len(part)})
+    return out
+
+
 def summarise(a, b, budget, sizes, names=None):
     caught, fa, threshold = caught_at_budget(a, b, budget)
     folds = cross_domain(a, b, budget, sizes, names)
@@ -169,7 +183,8 @@ def summarise(a, b, budget, sizes, names=None):
             "per_fold": folds,
             "min_fold": {"suite": mf["suite"], "caught": mf["caught"], "attacks": mf["attacks"],
                          "tpr": round(tprs[worst], 4), "ci95": [round(mf_lo, 4), round(mf_hi, 4)]},
-            "benign_p50": percentile(b, 0.50), "benign_p95": percentile(b, 0.95)}
+            "benign_p50": percentile(b, 0.50), "benign_p95": percentile(b, 0.95),
+            "per_suite_benign": per_suite_benign(b, sizes, names)}
 
 
 def report(rows, budget, out):
@@ -197,6 +212,21 @@ def report(rows, budget, out):
               f"{bd:<18}{headroom:<10}")
     print("\nheadroom = threshold - benign p95. Small or negative means the budget is being spent")
     print("on the benign tail, so a slight distribution shift blows past the false-alarm budget.")
+
+    suites = [s["suite"] for s in rows[0]["per_suite_benign"]] if rows else []
+    if suites:
+        print("\nPer-suite benign p50/p99 (drift signal): a threshold is per traffic source, not")
+        print("per model. A cutoff set on other suites is miscalibrated for a suite whose benign")
+        print("p99 sits far from it -- watch these move to catch drift before it costs you.\n")
+        shdr = f"{'detector':<24}" + "".join(f"{s[:10] + ' p50/p99':<22}" for s in suites)
+        print(shdr)
+        print("-" * len(shdr))
+        for r in rows:
+            line = f"{r['detector']:<24}"
+            for s in r["per_suite_benign"]:
+                cell = "{:.3g}/{:.3g}".format(s["p50"], s["p99"])
+                line += f"{cell:<22}"
+            print(line)
     with open(out, "w") as fh:
         json.dump(rows, fh, indent=1)
     print(f"\nSaved: {out}\n")
