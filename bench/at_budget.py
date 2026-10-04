@@ -55,6 +55,19 @@ def wilson(k, n, z=1.96):
     return (max(0.0, centre - half), min(1.0, centre + half))
 
 
+def percentile(values, q):
+    """The q-th percentile (0..1) of values, by linear interpolation."""
+    if not values:
+        return float("nan")
+    s = sorted(values)
+    pos = q * (len(s) - 1)
+    lo = math.floor(pos)
+    hi = math.ceil(pos)
+    if lo == hi:
+        return s[lo]
+    return s[lo] + (s[hi] - s[lo]) * (pos - lo)
+
+
 def suite_sizes():
     """(benign, attack) case counts per suite, in the order load_agentdojo() yields them."""
     from agentdojo.task_suite.load_suites import get_suites
@@ -155,14 +168,16 @@ def summarise(a, b, budget, sizes, names=None):
             "cross_domain_fp_ci95": [round(fp_lo, 4), round(fp_hi, 4)],
             "per_fold": folds,
             "min_fold": {"suite": mf["suite"], "caught": mf["caught"], "attacks": mf["attacks"],
-                         "tpr": round(tprs[worst], 4), "ci95": [round(mf_lo, 4), round(mf_hi, 4)]}}
+                         "tpr": round(tprs[worst], 4), "ci95": [round(mf_lo, 4), round(mf_hi, 4)]},
+            "benign_p50": percentile(b, 0.50), "benign_p95": percentile(b, 0.95)}
 
 
 def report(rows, budget, out):
     print(f"\nthreshold set so at most {budget:.0%} of the CALIBRATION benign cases are blocked;")
     print("cross-domain = picked on 3 suites, measured on the 4th (rotated). The min fold is the number to trust.\n")
     hdr = (f"{'detector':<24}{'pooled TPR':<13}{'per-fold ws/tr/bk/sl':<24}"
-           f"{'min fold [95% CI]':<24}{'unseen FP [95% CI]':<22}{'allowed/fold':<14}")
+           f"{'min fold [95% CI]':<24}{'unseen FP [95% CI]':<22}{'allowed/fold':<13}"
+           f"{'benign p50/p95':<18}{'headroom':<10}")
     print(hdr)
     print("-" * len(hdr))
     for r in rows:
@@ -175,7 +190,13 @@ def report(rows, budget, out):
         flo, fhi = r["cross_domain_fp_ci95"]
         fps = f"{cd_f}/{n_b} {cd_f / n_b:.0%} [{flo:.0%}-{fhi:.0%}]"
         allowed = "/".join(str(x) for x in r["allowed_per_fold"])
-        print(f"{r['detector']:<24}{pooled:<13}{pf:<24}{mfs:<24}{fps:<22}{allowed:<14}")
+        p50, p95, thr = r["benign_p50"], r["benign_p95"], r["threshold"]
+        bd = f"{p50:.3g}/{p95:.3g}"
+        headroom = f"{thr - p95:+.3g}"
+        print(f"{r['detector']:<24}{pooled:<13}{pf:<24}{mfs:<24}{fps:<22}{allowed:<13}"
+              f"{bd:<18}{headroom:<10}")
+    print("\nheadroom = threshold - benign p95. Small or negative means the budget is being spent")
+    print("on the benign tail, so a slight distribution shift blows past the false-alarm budget.")
     with open(out, "w") as fh:
         json.dump(rows, fh, indent=1)
     print(f"\nSaved: {out}\n")
