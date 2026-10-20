@@ -1,0 +1,33 @@
+name: action-metric
+
+# Keeps the action-level evaluator (bench/action, #9) regression-guarded.
+# Deliberately light: the evaluator and its tests need only PyYAML, jsonschema and
+# agentdojo (task specs), not the detector stack (torch/transformers/llm-guard), so
+# this runs in a few seconds. See bench/action/README.md.
+
+on:
+  push:
+    paths:
+      - "bench/action/**"
+      - "tests/test_action_evaluator.py"
+      - ".github/workflows/action-metric.yml"
+  pull_request:
+    paths:
+      - "bench/action/**"
+      - "tests/test_action_evaluator.py"
+      - ".github/workflows/action-metric.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install light deps (no detector stack)
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml jsonschema pytest agentdojo
+      - name: Action-level evaluator tests
+        run: python -m pytest -q tests/test_action_evaluator.py

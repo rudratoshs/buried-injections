@@ -10,6 +10,11 @@ make bench-action     # ~5 s, no model download: reuses bench/results/at_budget_
 make test             # evaluator tests (hand-written traces, AgentDojo integration, schema validation)
 ```
 
+> No model is downloaded — both reuse the saved scores in `bench/results/at_budget_2pct.json`.
+> They do still need `agentdojo` installed (it supplies the task specs); `make setup` installs it.
+> CI needs only `pyyaml`, `jsonschema`, `pytest` and `agentdojo`, not the detector stack
+> (`torch`/`transformers`/`llm-guard`) — see [`.github/workflows/action-metric.yml`](../../.github/workflows/action-metric.yml).
+
 ## The metric
 
 Two **separate, deterministic** failure predicates per tool call, and attribution as evidence:
