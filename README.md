@@ -338,6 +338,20 @@ Times are rough estimates on a modern CPU (e.g., Apple silicon or equivalent). N
 
 ---
 
+## 🧬 Test generalization, not template-matching (`--template`)
+
+Every attack in the leaderboard uses one shared wrapper (AgentDojo's `important_instructions` template). As the TL;DR warns, a detector can score high by **recognising that wrapper** rather than catching injection in general. `--template` measures exactly that gap: the *same* attack goals, delivered through different strategies.
+
+```bash
+.venv/bin/python bench/run.py --dataset agentdojo --detector <name>                        # default = standard (the shared wrapper)
+.venv/bin/python bench/run.py --dataset agentdojo --detector <name> --template novel_wrapper
+.venv/bin/python bench/run.py --dataset agentdojo --detector <name> --template all          # per-template catch-rate table
+```
+
+Six templates over the same goals: `standard` (original, unchanged default), `novel_wrapper` (paraphrased / businesslike / roleplay), `obfuscation` (base64 / ROT13 / unicode / code-comment), `foreign_lang` (es / hi / de), `split_indirect` (hidden in retrieved content), and `benign_framed` (the malicious action phrased as a normal request). A detector that memorised the wrapper scores high on `standard` and collapses on the re-worded templates — that gap *is* the measurement. The benign / false-positive set is template-independent and reported alongside. Closes #2.
+
+---
+
 ## 🗂️ Files
 
 | 📄 File | 🛠️ Role |

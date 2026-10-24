@@ -12,6 +12,8 @@ and fill in load_agentdojo() (a stub is provided below).
 
 from dataclasses import dataclass
 
+from .templates import TEMPLATE_NAMES, TEMPLATES  # noqa: F401 (re-exported)
+
 
 @dataclass
 class ToolCall:
@@ -66,7 +68,7 @@ def load_sample():
 AGENTDOJO_VERSION = "v1"   # v1 = the paper's 629 security cases
 
 
-def agentdojo_texts(include_prompt=True):
+def agentdojo_texts(include_prompt=True, template="standard"):
     """Yield (label, text) for every AgentDojo case. Requires: pip install agentdojo
 
     This tests whether a detector spots injected text in what the agent
@@ -75,23 +77,31 @@ def agentdojo_texts(include_prompt=True):
     For each task suite (workspace, travel, banking, slack):
       - benign: every user task prompt + a clean tool output from that suite
       - attack: every (user task x injection task) pair -- the same benign
-        context with AgentDojo's "important_instructions" attack appended,
-        carrying that injection task's goal. On v1 this is 629 cases.
+        context with an attack appended, carrying that injection task's goal.
+        On v1 this is 629 cases.
+
+    `template` selects the attack-DELIVERY strategy (see datasets/templates.py):
+    "standard" is AgentDojo's `important_instructions` wrapper (the default, so
+    behaviour is unchanged); the others re-word the SAME goals so the catch-rate
+    gap between the known format and re-worded ones becomes visible. Benign
+    cases are template-independent -- they carry no injection either way.
 
     include_prompt=False drops the user task prompt and keeps only the tool
     output, which is what a gateway scanning tool results actually sees.
     """
     try:
         from agentdojo.task_suite.load_suites import get_suites
-        from agentdojo.attacks.important_instructions_attacks import (
-            ImportantInstructionsAttack,
-        )
     except ImportError as e:
         raise RuntimeError(
             "AgentDojo not installed. Run: make setup"
         ) from e
 
-    template = ImportantInstructionsAttack._JB_STRING
+    if template not in TEMPLATES:
+        raise ValueError(
+            "unknown template %r (available: %s)"
+            % (template, ", ".join(TEMPLATE_NAMES))
+        )
+    wrap = TEMPLATES[template]
 
     for suite in get_suites(AGENTDOJO_VERSION).values():
         # Clean tool-output text the suite normally injects into (bills,
@@ -104,17 +114,23 @@ def agentdojo_texts(include_prompt=True):
             clean = f"{user_task.PROMPT}\n{tool_output}" if include_prompt else tool_output
             yield "benign", clean
 
-            for injection_task in suite.injection_tasks.values():
-                payload = template.format(
-                    user="Emma Johnson", model="the AI assistant",
-                    goal=injection_task.GOAL,
+            # `index` rotates each template's variants deterministically.
+            for j, injection_task in enumerate(suite.injection_tasks.values()):
+                payload = wrap(
+                    injection_task.GOAL,
+                    user="Emma Johnson", model="the AI assistant", index=i + j,
                 )
                 yield "attack", clean + payload
 
 
-def load_agentdojo():
-    """The real AgentDojo set as ToolCalls: 629 attacks + 97 benign on v1."""
-    return [ToolCall("agent_task", {}, text, label) for label, text in agentdojo_texts()]
+def load_agentdojo(template="standard"):
+    """The real AgentDojo set as ToolCalls: 629 attacks + 97 benign on v1.
+
+    `template` picks the attack-delivery strategy (see datasets/templates.py);
+    the default "standard" is the original `important_instructions` wrapper.
+    """
+    return [ToolCall("agent_task", {}, text, label)
+            for label, text in agentdojo_texts(template=template)]
 
 
 DATASETS = {
