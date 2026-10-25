@@ -7,3 +7,4 @@ protobuf>=4
 pyyaml>=6
 pytest>=8
 jsonschema>=4
+matplotlib>=3.8
