@@ -1,4 +1,4 @@
-.PHONY: bench bench-agentdojo bench-windows bench-payloads bench-budget bench-action bench-register test setup
+.PHONY: bench bench-agentdojo bench-windows bench-payloads bench-budget bench-action bench-register plot test setup
 
 # Everything runs in a local Python 3.12 venv (llm-guard does not build on 3.14).
 PY := .venv/bin/python
@@ -33,6 +33,10 @@ bench-action:
 # The 2% budget column reuses the thresholds saved by bench-budget.
 bench-register:
 	$(PY) bench/register.py
+
+# Leaderboard as a scatter (catch rate vs false-positive rate) from the table run.py saved (~2 s).
+plot:
+	$(PY) bench/plot.py
 
 test:
 	$(PY) -m pytest -q tests

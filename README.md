@@ -67,6 +67,11 @@ surrounding text (`make bench-payloads`).
 - Every classifier uses threshold 0.5 on its "injection" class, except LLM Guard,
   which runs with its shipped defaults.
 
+<img src="bench/results/agentdojo.png" alt="Catch rate vs false-positive rate, one point per detector" width="620">
+
+<sub>The same table as a scatter: top-left is the goal, the dotted line is the 2% false-alarm budget.
+`make plot` redraws it from `bench/results/agentdojo.json`.</sub>
+
 > [!NOTE]
 > 🧩 **Prompt Guard 2 weights:** the public community copies
 > [`gravitee-io/Llama-Prompt-Guard-2-86M-onnx`](https://huggingface.co/gravitee-io/Llama-Prompt-Guard-2-86M-onnx)
@@ -357,6 +362,7 @@ Six templates over the same goals: `standard` (original, unchanged default), `no
 | 📄 File | 🛠️ Role |
 |---|---|
 | `bench/run.py` | Runs every detector over every case, prints + saves the table |
+| `bench/plot.py` | Draws the saved table as a catch-rate vs false-positive scatter (`make plot`) |
 | `bench/datasets/__init__.py` | Test cases: 16-case sample + AgentDojo loader (629 + 97) |
 | `bench/detectors/__init__.py` | All 10 detectors |
 | `bench/payloads.py` | Each AgentDojo attack scored alone, plus hand-written controls |
@@ -367,7 +373,7 @@ Six templates over the same goals: `standard` (original, unchanged default), `no
 | `bench/action_level.py` | Action-level metric (#9): gateway × scenario × injection, scored by the evaluator |
 | `bench/action/` | Evaluator, canonicalizer, simulated AgentDojo tool layer, scenario specs, trace schema ([README](bench/action/README.md)) |
 | `tests/` | Evaluator and register tests (`make test`) |
-| `bench/results/` | Generated tables (JSON) |
+| `bench/results/` | Generated tables (JSON) and the leaderboard scatter (PNG) |
 
 ---
 
