@@ -1,0 +1,5 @@
+# Only what the pure-Python tests in tests/ import. The benchmarks themselves
+# need requirements.txt (agentdojo, transformers, torch, llm-guard).
+pytest>=8
+jsonschema>=4
+pyyaml>=6
