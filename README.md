@@ -312,6 +312,7 @@ make bench-windows    # 🪟 Prompt Guard 2 input scope × window size (~15 min)
 make bench-action     # 🎯 action-level metric preview, AgentDojo banking (~5 s, reuses saved scores)
 make bench-register   # 🗣️ 40 command / polite pairs, default + 2% budget (~1 min; run bench-budget first for the budget column)
 make test             # ✅ evaluator and register tests
+make test-fast        # ✅ same tests in a pytest-only venv (~1 min, stdlib deps only)
 ```
 
 ⬇️ The first run downloads ~5 GB of model weights.
@@ -366,7 +367,8 @@ Six templates over the same goals: `standard` (original, unchanged default), `no
 | `bench/register_pairs.py` | The 40 frozen command / polite pairs (from hedgerow-dev/prompt-guard-register-study) |
 | `bench/action_level.py` | Action-level metric (#9): gateway × scenario × injection, scored by the evaluator |
 | `bench/action/` | Evaluator, canonicalizer, simulated AgentDojo tool layer, scenario specs, trace schema ([README](bench/action/README.md)) |
-| `tests/` | Evaluator and register tests (`make test`) |
+| `bench/detectors/gateway.py` | Hosted gateway detector: OrcaRouter chat completions + model picker |
+| `tests/` | Evaluator, register and gateway tests (`make test`, `make test-fast`) |
 | `bench/results/` | Generated tables (JSON) |
 
 ---
@@ -381,6 +383,28 @@ Six templates over the same goals: `standard` (original, unchanged default), `no
 
 API-only detectors (which need a key) are welcome as PRs too; they're left out here
 so that anyone can reproduce every number for free.
+
+### OrcaRouter (hosted gateway detector)
+
+[OrcaRouter](https://www.orcarouter.ai) is an OpenAI-compatible gateway that routes
+many providers behind one endpoint, and a chat model on it is itself a
+prompt-injection detector when asked for a verdict. `bench/detectors/gateway.py`
+adds it as the named `orcarouter` detector. It is API-only (outside the default
+run), so it prints its table and does not write `bench/results/*.json`.
+
+```bash
+export ORCAROUTER_API_KEY=sk-orca-xxxx                   # API base: https://api.orcarouter.ai/v1
+.venv/bin/python bench/run.py --list-orcarouter-models   # chat-capable models from GET /v1/models
+.venv/bin/python bench/run.py --dataset agentdojo --detector orcarouter
+```
+
+The model defaults to `orcarouter/auto` if the catalogue offers it; set
+`ORCAROUTER_MODEL` (or the constructor's `model=`) to pin another. `ORCAROUTER_BASE_URL`
+overrides the API base (HTTPS, or HTTP on loopback). The model picker keeps only
+models whose catalogue metadata names a chat endpoint type (`openai`, `anthropic`,
+`gemini`, `openai-response`) and whose output modalities include `text`, so image,
+video, rerank and embedding models never reach a chat request, and models without
+metadata are dropped.
 
 ---
 

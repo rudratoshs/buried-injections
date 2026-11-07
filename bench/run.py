@@ -25,6 +25,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from datasets import DATASETS, TEMPLATE_NAMES
 from detectors import DETECTORS, timed_check
+from detectors.gateway import (OrcaRouterConfig, OrcaRouterDetector, OrcaRouterError,
+                               fetch_models, select_default_model, text_chat_models)
 
 
 def score(detector, cases):
@@ -167,7 +169,24 @@ def main():
                         help="run only this detector (see --list-detectors)")
     parser.add_argument("--list-detectors", action="store_true",
                         help="print detector names and exit")
+    parser.add_argument("--list-orcarouter-models", action="store_true",
+                        help="list the chat-capable models the OrcaRouter gateway "
+                             "offers (needs ORCAROUTER_API_KEY) and exit")
     args = parser.parse_args()
+
+    if args.list_orcarouter_models:
+        config = OrcaRouterConfig()
+        if os.environ.get("ORCAROUTER_MODEL"):
+            config.model = os.environ["ORCAROUTER_MODEL"]
+        models = fetch_models(config)
+        chat = text_chat_models(models)
+        default = select_default_model(models)
+        print(f"OrcaRouter catalogue: {len(models)} models, {len(chat)} text-chat")
+        print(f"API base: {config.base}")
+        print(f"Default model: {default}")
+        for m in chat:
+            print(f"  {m['id']}")
+        return
 
     if args.list_detectors:
         for d in DETECTORS:
@@ -175,10 +194,14 @@ def main():
         return
 
     detectors = DETECTORS
-    if args.detector:
+    out_path = None   # API-only detector: print the table, do not save a free result
+    if args.detector == "orcarouter":
+        # Intentionally outside the default free-to-reproduce run.
+        detectors = [OrcaRouterDetector()]
+    elif args.detector:
         detectors = [d for d in DETECTORS if d.name == args.detector]
         if not detectors:
-            available = ", ".join(d.name for d in DETECTORS)
+            available = ", ".join([d.name for d in DETECTORS] + ["orcarouter"])
             parser.error("unknown detector %r (available: %s)"
                          % (args.detector, available))
 
@@ -215,7 +238,10 @@ def main():
 
     # --- single-template mode (default: standard, i.e. unchanged behaviour) ---
     cases = build_cases(args.dataset, args.template)
-    rows = [score(d, cases) for d in detectors]
+    try:
+        rows = [score(d, cases) for d in detectors]
+    except OrcaRouterError as e:
+        parser.error(str(e))
 
     label = args.dataset
     if args.dataset == "agentdojo" and args.template != "standard":
@@ -226,6 +252,8 @@ def main():
     stem = args.dataset if not args.detector else f"{args.dataset}.{args.detector}"
     if args.dataset == "agentdojo" and args.template != "standard":
         stem = f"{stem}.{args.template}"
+    if out_path is None:   # API-only detector: printed, not saved as a free result
+        return
     out_path = os.path.join(out_dir, f"{stem}.json")
     with open(out_path, "w") as f:
         json.dump(rows, f, indent=2)
